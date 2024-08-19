@@ -64,24 +64,16 @@ Route::middleware('auth.server')->group(function () {
     Route::put('/customers/{id}', function (CustomerStoreRequest $request, int $id) {
         try {
             $customer = DB::transaction(function () use ($request, $id) {
-                /** @var Customer $customer */
                 $customer = Customer::findOrFail($id);
 
                 $customer->update($request->validated());
 
-                $existingContacts = $customer->contacts->map(fn($user) => $user->only(['type', 'value']))->toArray();
+                $contactModels = array_map(function ($contact) {
+                    return new Contact($contact);
+                }, $request->get('contacts', []));
 
-                if (($contacts = $request->get('contacts')) === []) {
-                    $customer->contacts()->delete();
-                } elseif (!empty($contacts) && ($existingContacts !== $contacts)) {
-                    $customer->contacts()->delete();
-
-                    $contactModels = array_map(function ($contact) {
-                        return new Contact($contact);
-                    }, $contacts);
-
-                    $customer->contacts()->saveMany($contactModels);
-                }
+                $customer->contacts()->delete();
+                $customer->contacts()->saveMany($contactModels);
 
                 return $customer->load('contacts');
             });
