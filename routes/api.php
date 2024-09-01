@@ -87,3 +87,10 @@ Route::middleware('auth.server')->group(function () {
         }
     });
 });
+
+
+Route::middleware('private')->group(function () {
+    Route::get('/customers/{id}', function (int $id) {
+        return Response::json(CustomerResource::make(Customer::findOrFail($id)));
+    });
+});

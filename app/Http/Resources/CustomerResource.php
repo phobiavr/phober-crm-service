@@ -18,9 +18,10 @@ class CustomerResource extends JsonResource {
             "id"         => $this->id,
             "first_name" => $this->first_name,
             "last_name"  => $this->last_name,
-            "status"     => $this->status ?: 'pending',
+            "full_name"  => $this->full_name,
+            "status"     => $this->status,
             "birthday"   => $this->birthday,
-            "gender"     => $this->gender ?: 'M',
+            "gender"     => $this->gender,
             "note"       => $this->note,
             "contacts"   => ContactResource::collection($this->whenLoaded('contacts')),
         ];

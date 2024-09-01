@@ -22,4 +22,8 @@ class Customer extends Model {
     public function contacts(): HasMany {
         return $this->hasMany(Contact::class, 'customer_id', 'id');
     }
+
+    public function getFullNameAttribute(): string {
+        return "{$this->first_name} {$this->last_name}";
+    }
 }
