@@ -86,6 +86,15 @@ Route::middleware('auth.server')->group(function () {
             ], JsonResponse::HTTP_UNPROCESSABLE_ENTITY);
         }
     });
+
+    Route::get('/customers/upcoming-birthdays', function () {
+        $customers = Customer::all()
+            ->sortBy('days_until_birthday')
+            ->values()
+            ->take(5);
+
+        return Response::json(CustomerResource::collection($customers));
+    });
 });
 
 

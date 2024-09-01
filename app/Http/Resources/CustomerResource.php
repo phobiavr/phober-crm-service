@@ -24,6 +24,8 @@ class CustomerResource extends JsonResource {
             "gender"     => $this->gender,
             "note"       => $this->note,
             "contacts"   => ContactResource::collection($this->whenLoaded('contacts')),
+
+            "days_until_birthday" => $this->days_until_birthday,
         ];
     }
 }
