@@ -15,7 +15,8 @@
         "guzzlehttp/guzzle": "^7.2",
         "laravel/framework": "^9.19",
         "laravel/telescope": "^4.17",
-        "shared/package": "dev-main"
+        "shared/package": "dev-main",
+        "yajra/laravel-oci8": "^9.5"
     },
     "autoload": {
         "psr-4": {
