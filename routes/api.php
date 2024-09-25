@@ -9,8 +9,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Route;
-use Shared\Pageable\PageableCollection;
-use Shared\Pageable\PageableRequest;
+use Phobiavr\PhoberLaravelCommon\Pageable\PageableCollection;
+use Phobiavr\PhoberLaravelCommon\Pageable\PageableRequest;
 
 Route::middleware('auth.server')->group(function () {
     Route::get('', function () {
