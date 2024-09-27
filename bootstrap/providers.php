@@ -1,5 +1,6 @@
 <?php
 
 return [
-    \Phobiavr\PhoberLaravelCommon\SharedServiceProvider::class
+    App\Providers\AppServiceProvider::class,
+    Phobiavr\PhoberLaravelCommon\SharedServiceProvider::class,
 ];

@@ -7,12 +7,13 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Phobiavr\PhoberLaravelCommon\Pageable\Pageable;
+use Phobiavr\PhoberLaravelCommon\Traits\Authorable;
 
 /**
  * @property Collection $contacts
  */
 class Customer extends Model {
-    use Pageable;
+    use Pageable, Authorable;
 
     protected $with = ['contacts'];
 
