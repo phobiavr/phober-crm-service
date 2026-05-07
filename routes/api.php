@@ -21,14 +21,13 @@ Route::middleware('auth.server')->group(function () {
         $query = Customer::query();
 
         if ($trim = $request->get('trim')) {
-            $query
-                ->orWhere('note', 'LIKE', "%{$trim}%")
-                ->orWhere('first_name', 'LIKE', "%{$trim}%")
-                ->orWhere('last_name', 'LIKE', "%{$trim}%")
-                ->orWhere('note', 'LIKE', "%{$trim}%")
-                ->orWhereHas('contacts', function ($query) use ($trim) {
-                    $query->where('value', 'LIKE', "%{$trim}%");
-                });
+            $query->where(function ($q) use ($trim) {
+                $q->orWhere('first_name', 'LIKE', "%{$trim}%")
+                  ->orWhere('last_name', 'LIKE', "%{$trim}%")
+                  ->orWhere('note', 'LIKE', "%{$trim}%")
+                  ->orWhereHas('contacts', fn($q) => $q->where('value', 'LIKE', "%{$trim}%"))
+                  ->orWhereHas('loyaltyCard', fn($q) => $q->where('code', 'LIKE', "%{$trim}%"));
+            });
         }
 
         $list = $query->paginateFromRequest($request);
@@ -85,6 +84,18 @@ Route::middleware('auth.server')->group(function () {
                 'message' => $e->getMessage(),
             ], JsonResponse::HTTP_UNPROCESSABLE_ENTITY);
         }
+    });
+
+    Route::put('/customers/{id}/loyalty-card', function (Request $request, int $id) {
+        $customer = Customer::findOrFail($id);
+
+        $card = \App\Models\LoyaltyCard::firstOrNew(['id' => $customer->id]);
+        $card->id     = $customer->id;
+        $card->code   = $request->input('code');
+        $card->status = $request->input('status', 'BASIC');
+        $card->save();
+
+        return Response::json(new CustomerResource($customer->fresh(['contacts', 'loyaltyCard'])));
     });
 
     Route::get('/customers/upcoming-birthdays', function () {

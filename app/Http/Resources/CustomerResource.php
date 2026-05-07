@@ -25,6 +25,11 @@ class CustomerResource extends JsonResource {
             "note"       => $this->note,
             "contacts"   => ContactResource::collection($this->whenLoaded('contacts')),
 
+            "loyalty_card" => $this->when($this->loyaltyCard !== null, fn() => [
+                'code'   => $this->loyaltyCard->code,
+                'status' => $this->loyaltyCard->status,
+            ]),
+
             "days_until_birthday" => $this->days_until_birthday,
         ];
     }

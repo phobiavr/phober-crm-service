@@ -15,7 +15,7 @@ class CustomerStoreRequest extends FormRequest {
             'first_name'       => 'required|string',
             'last_name'        => 'required|string',
             'birthday'         => 'required|date',
-            'gender'           => 'nullable|char',
+            'gender'           => 'nullable|string|in:M,F',
             'note'             => 'nullable|string',
             'contacts'         => 'array|sometimes',
             'contacts.*.type'  => 'required_with:contacts',

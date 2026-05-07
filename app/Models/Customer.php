@@ -6,23 +6,29 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Phobiavr\PhoberLaravelCommon\Pageable\Pageable;
 use Phobiavr\PhoberLaravelCommon\Traits\Authorable;
 
 /**
  * @property Collection $contacts
+ * @property LoyaltyCard|null $loyaltyCard
  */
 class Customer extends Model {
     use Pageable, Authorable;
 
-    protected $with = ['contacts'];
+    protected $with = ['contacts', 'loyaltyCard'];
 
     protected $fillable = [
-        'birthday', 'first_name', 'last_name'
+        'birthday', 'first_name', 'last_name', 'gender', 'note'
     ];
 
     public function contacts(): HasMany {
         return $this->hasMany(Contact::class, 'customer_id', 'id');
+    }
+
+    public function loyaltyCard(): HasOne {
+        return $this->hasOne(LoyaltyCard::class, 'id', 'id');
     }
 
     public function getFullNameAttribute(): string {
