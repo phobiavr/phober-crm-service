@@ -16,12 +16,14 @@ class CustomerService {
         $query = Customer::query();
 
         if ($trim) {
-            $query->where(function (Builder $q) use ($trim) {
-                $q->orWhere('first_name', 'LIKE', "%{$trim}%")
-                    ->orWhere('last_name', 'LIKE', "%{$trim}%")
-                    ->orWhere('note', 'LIKE', "%{$trim}%")
-                    ->orWhereHas('contacts', fn(Builder $b) => $b->where('value', 'LIKE', "%{$trim}%"))
-                    ->orWhereHas('loyaltyCard', fn(Builder $b) => $b->where('code', 'LIKE', "%{$trim}%"));
+            $search = '%' . addcslashes($trim, '\\%_') . '%';
+
+            $query->where(function (Builder $q) use ($search) {
+                $q->orWhere('first_name', 'LIKE', $search)
+                    ->orWhere('last_name', 'LIKE', $search)
+                    ->orWhere('note', 'LIKE', $search)
+                    ->orWhereHas('contacts', fn(Builder $b) => $b->where('value', 'LIKE', $search))
+                    ->orWhereHas('loyaltyCard', fn(Builder $b) => $b->where('code', 'LIKE', $search));
             });
         }
 
