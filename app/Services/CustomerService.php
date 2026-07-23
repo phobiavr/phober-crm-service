@@ -5,9 +5,10 @@ namespace App\Services;
 use App\Models\Contact;
 use App\Models\Customer;
 use App\Models\LoyaltyCard;
+use Carbon\Carbon;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Phobiavr\PhoberLaravelCommon\Pageable\PageableRequest;
 
@@ -78,9 +79,38 @@ class CustomerService {
     }
 
     public function upcomingBirthdays(int $limit = 5): Collection {
-        return Customer::all()
-            ->sortBy('days_until_birthday')
-            ->values()
-            ->take($limit);
+        $todayKey = (int) Carbon::today()->format('md');
+
+        $results = $this->birthdaysFrom($todayKey, '>=', $limit);
+
+        if ($results->count() < $limit) {
+            $results = $results->concat(
+                $this->birthdaysFrom($todayKey, '<', $limit - $results->count())
+            );
+        }
+
+        return $results->values();
+    }
+
+    private function birthdaysFrom(int $todayKey, string $operator, int $limit): Collection {
+        $results = Customer::query()
+            ->without(['contacts', 'loyaltyCard'])
+            ->where('birthday_month_day', $operator, $todayKey)
+            ->orderBy('birthday_month_day')
+            ->limit($limit)
+            ->get();
+
+        if ($results->count() === $limit) {
+            $boundary = $results->last()->birthday_month_day;
+            $ties = Customer::query()
+                ->without(['contacts', 'loyaltyCard'])
+                ->where('birthday_month_day', $boundary)
+                ->whereNotIn('id', $results->pluck('id'))
+                ->get();
+
+            $results = $results->concat($ties);
+        }
+
+        return $results;
     }
 }
