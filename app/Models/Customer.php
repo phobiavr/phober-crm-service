@@ -41,10 +41,9 @@ class Customer extends Model {
     public function getDaysUntilBirthdayAttribute() {
         $today = Carbon::today();
 
-        $birthday = Carbon::parse($this->birthday);
-        $birthday->year($today->year);
+        $birthday = Carbon::parse($this->birthday)->year($today->year);
 
-        if ($birthday->isPast()) {
+        if ($birthday->lt($today)) {
             $birthday->addYear();
         }
 
