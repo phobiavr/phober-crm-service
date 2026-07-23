@@ -1,12 +1,9 @@
 <?php
 
 use App\Http\Controllers\CustomerController;
-use App\Http\Controllers\MeController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('auth.server')->group(function () {
-    Route::get('', [MeController::class, 'show']);
-
     Route::get('/customers', [CustomerController::class, 'index']);
     Route::post('/customers', [CustomerController::class, 'store']);
     Route::put('/customers/{id}', [CustomerController::class, 'update']);
