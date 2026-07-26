@@ -6,6 +6,7 @@ use App\Observers\CustomerObserver;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -18,7 +19,7 @@ use Phobiavr\PhoberLaravelCommon\Traits\Authorable;
  */
 #[ObservedBy([CustomerObserver::class])]
 class Customer extends Model {
-    use Pageable, Authorable;
+    use Pageable, Authorable, HasFactory;
 
     protected $with = ['contacts', 'loyaltyCard'];
 
@@ -38,7 +39,11 @@ class Customer extends Model {
         return "{$this->first_name} {$this->last_name}";
     }
 
-    public function getDaysUntilBirthdayAttribute() {
+    /**
+     * days_until_birthday
+     */
+    public function getDaysUntilBirthdayAttribute(): int
+    {
         $today = Carbon::today();
 
         $birthday = Carbon::parse($this->birthday)->year($today->year);
@@ -47,6 +52,6 @@ class Customer extends Model {
             $birthday->addYear();
         }
 
-        return $today->diffInDays($birthday);
+        return (int) $today->diffInDays($birthday);
     }
 }
