@@ -1,0 +1,212 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Phober CRM Service API",
+    "description": "Customers, contacts, and loyalty cards. Reached externally via https://api.phober.test/crm/*. No reservation/booking functionality exists in this service despite ReservationStatusEnum/ReservationRequestEnum being defined in the shared package.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    { "url": "https://api.phober.test/crm", "description": "Via API gateway" }
+  ],
+  "tags": [
+    { "name": "Customers" }
+  ],
+  "components": {
+    "securitySchemes": {
+      "authServer": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Bearer token validated against auth-server (auth.server middleware)."
+      },
+      "privateService": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Service-Secret",
+        "description": "Shared inter-service secret (private middleware) — used by staff-service's CrmClient to resolve a customer's name."
+      }
+    },
+    "schemas": {
+      "Customer": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "first_name": { "type": "string" },
+          "last_name": { "type": "string" },
+          "full_name": { "type": "string" },
+          "status": { "type": "string", "nullable": true, "description": "Present in the API response, but not backed by any fillable field, model cast, or CustomerStatusEnum usage found in the current codebase — treat as unverified/likely always null." },
+          "birthday": { "type": "string", "format": "date" },
+          "gender": { "type": "string", "enum": ["M", "F"], "nullable": true },
+          "note": { "type": "string", "nullable": true },
+          "contacts": { "type": "array", "items": { "$ref": "#/components/schemas/Contact" }, "description": "Omitted by GET /customers/upcoming-birthdays, which explicitly skips eager-loading this relation" },
+          "loyalty_card": {
+            "type": "object",
+            "nullable": true,
+            "description": "Omitted entirely (not just null) when the customer has no loyalty card",
+            "properties": {
+              "code": { "type": "string" },
+              "status": { "type": "string", "enum": ["BASIC", "SILVER", "GOLD", "PLATINUM"] }
+            }
+          },
+          "days_until_birthday": { "type": "integer" }
+        }
+      },
+      "Contact": {
+        "type": "object",
+        "properties": {
+          "type": { "type": "string", "enum": ["PHONE", "EMAIL", "TELEGRAM"], "description": "Not enforced by validation — any string is accepted on write" },
+          "value": { "type": "string" }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/customers": {
+      "get": {
+        "tags": ["Customers"],
+        "summary": "Search/list customers (paginated)",
+        "security": [{ "authServer": [] }],
+        "parameters": [
+          { "name": "trim", "in": "query", "required": false, "schema": { "type": "string" }, "description": "Search term across first_name, last_name, note, contacts.value, loyalty_card.code" },
+          { "name": "page", "in": "query", "required": false, "schema": { "type": "integer" } },
+          { "name": "size", "in": "query", "required": false, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": { "type": "array", "items": { "$ref": "#/components/schemas/Customer" } },
+                    "total": { "type": "integer" },
+                    "size": { "type": "integer" },
+                    "current_page": { "type": "integer" },
+                    "total_pages": { "type": "integer" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Customers"],
+        "summary": "Create a customer",
+        "security": [{ "authServer": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["first_name", "last_name", "birthday"],
+                "properties": {
+                  "first_name": { "type": "string" },
+                  "last_name": { "type": "string" },
+                  "birthday": { "type": "string", "format": "date" },
+                  "gender": { "type": "string", "enum": ["M", "F"], "nullable": true },
+                  "note": { "type": "string", "nullable": true },
+                  "contacts": { "type": "array", "items": { "$ref": "#/components/schemas/Contact" }, "nullable": true }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Customer" } } } },
+          "422": { "description": "Validation error" }
+        }
+      }
+    },
+    "/customers/{id}": {
+      "get": {
+        "tags": ["Customers"],
+        "summary": "Get a single customer",
+        "description": "Inter-service only — used by staff-service's CrmClient::customer() to resolve full_name onto an invoice.",
+        "security": [{ "privateService": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Customer" } } } },
+          "404": { "description": "Not found" }
+        }
+      },
+      "put": {
+        "tags": ["Customers"],
+        "summary": "Update a customer",
+        "description": "Contacts are fully replaced, not merged — all existing contacts are deleted and the request's contacts array is saved in their place.",
+        "security": [{ "authServer": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["first_name", "last_name", "birthday"],
+                "properties": {
+                  "first_name": { "type": "string" },
+                  "last_name": { "type": "string" },
+                  "birthday": { "type": "string", "format": "date" },
+                  "gender": { "type": "string", "enum": ["M", "F"], "nullable": true },
+                  "note": { "type": "string", "nullable": true },
+                  "contacts": { "type": "array", "items": { "$ref": "#/components/schemas/Contact" }, "nullable": true, "description": "Full replacement of existing contacts" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Updated", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Customer" } } } },
+          "404": { "description": "Not found" },
+          "422": { "description": "Validation error" }
+        }
+      }
+    },
+    "/customers/{id}/loyalty-card": {
+      "put": {
+        "tags": ["Customers"],
+        "summary": "Set/update a customer's loyalty card",
+        "description": "Upsert keyed by customer id (loyalty_cards.id IS the customer id) — calling this repeatedly updates the same row, never creates duplicates.",
+        "security": [{ "authServer": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["code"],
+                "properties": {
+                  "code": { "type": "string" },
+                  "status": { "type": "string", "enum": ["BASIC", "SILVER", "GOLD", "PLATINUM"], "nullable": true, "description": "Defaults to BASIC if omitted" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Customer" } } } },
+          "404": { "description": "Customer not found" }
+        }
+      }
+    },
+    "/customers/upcoming-birthdays": {
+      "get": {
+        "tags": ["Customers"],
+        "summary": "List the next 5 customers with upcoming birthdays",
+        "description": "Plain array, NOT the paginated envelope used by GET /customers. Fixed limit of 5 (not configurable via query params), wraps around to the start of the year if fewer than 5 remain, and includes ties past the limit boundary — so the array can have more than 5 items. contacts/loyalty_card are excluded from eager loading for this endpoint's rows.",
+        "security": [{ "authServer": [] }],
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Customer" } } } } }
+        }
+      }
+    }
+  }
+}
