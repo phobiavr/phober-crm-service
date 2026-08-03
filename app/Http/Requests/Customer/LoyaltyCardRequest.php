@@ -6,6 +6,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use Phobiavr\PhoberLaravelCommon\Enums\LoyaltyCardStatusEnum;
 
 class LoyaltyCardRequest extends FormRequest {
+    /** @return array<string, string> */
     public function rules(): array {
         return [
             'code'   => 'required|string',

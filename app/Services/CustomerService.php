@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\DB;
 use Phobiavr\PhoberLaravelCommon\Pageable\PageableRequest;
 
 class CustomerService {
+    /** @return LengthAwarePaginator<int, Customer> */
     public function search(PageableRequest $request, ?string $trim): LengthAwarePaginator {
         $query = Customer::query();
 
@@ -32,6 +33,7 @@ class CustomerService {
     }
 
     /**
+     * @param array<string, mixed> $customerData
      * @param Contact[] $contacts
      */
     public function create(array $customerData, array $contacts): Customer {
@@ -47,6 +49,7 @@ class CustomerService {
     }
 
     /**
+     * @param array<string, mixed> $customerData
      * @param Contact[] $contacts
      */
     public function update(int $id, array $customerData, array $contacts): Customer {
@@ -65,19 +68,23 @@ class CustomerService {
     public function setLoyaltyCard(int $customerId, string $code, string $status): Customer {
         $customer = Customer::findOrFail($customerId);
 
-        $card         = LoyaltyCard::firstOrNew(['id' => $customer->id]);
-        $card->id     = $customer->id;
+        /** @var int<0, max> $customerModelId */
+        $customerModelId = $customer->id;
+
+        $card         = LoyaltyCard::firstOrNew(['id' => $customerModelId]);
+        $card->id     = $customerModelId;
         $card->code   = $code;
         $card->status = $status;
         $card->save();
 
-        return $customer->fresh(['contacts', 'loyaltyCard']);
+        return $customer->fresh(['contacts', 'loyaltyCard']) ?? $customer;
     }
 
     public function find(int $id): Customer {
         return Customer::findOrFail($id);
     }
 
+    /** @return Collection<int, Customer> */
     public function upcomingBirthdays(int $limit = 5): Collection {
         $todayKey = (int) Carbon::today()->format('md');
 
@@ -92,6 +99,7 @@ class CustomerService {
         return $results->values();
     }
 
+    /** @return Collection<int, Customer> */
     private function birthdaysFrom(int $todayKey, string $operator, int $limit): Collection {
         $results = Customer::query()
             ->without(['contacts', 'loyaltyCard'])
@@ -100,8 +108,9 @@ class CustomerService {
             ->limit($limit)
             ->get();
 
-        if ($results->count() === $limit) {
-            $boundary = $results->last()->birthday_month_day;
+        $boundary = $results->last()?->birthday_month_day;
+
+        if ($results->count() === $limit && $boundary !== null) {
             $ties = Customer::query()
                 ->without(['contacts', 'loyaltyCard'])
                 ->where('birthday_month_day', $boundary)

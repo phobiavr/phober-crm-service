@@ -6,6 +6,7 @@ use App\Models\Contact;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreRequest extends FormRequest {
+    /** @return array<string, string> */
     public function rules(): array {
         return [
             'first_name'       => 'required|string',
@@ -21,6 +22,8 @@ class StoreRequest extends FormRequest {
 
     /**
      * Customer attributes only — without nested contacts.
+     *
+     * @return array<string, mixed>
      */
     public function customerData(): array {
         return $this->safe()->except('contacts');
